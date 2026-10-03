@@ -1,3 +1,6 @@
+"use client";
+import { useState } from "react";
+
 type ApplicationStatus = "Applied" | "Rejected" | "Interview" | "Offer" | "Other";
 
 interface JobApplication {
@@ -10,17 +13,17 @@ interface JobApplication {
   notes: string;
 }
 
-const sampleJobs: JobApplication[] = [
-  {
+const initialJobsMap: Record<string, JobApplication> = {
+  "1": {
     id: "1",
     company: "Google",
     role: "Frontend Engineer",
     appliedDate: "2026-09-25",
     url: "https://careers.google.com",
     status: "Interview",
-    notes: "I wish bro ",
+    notes: "I wish bro",
   },
-  {
+  "2": {
     id: "2",
     company: "Stripe",
     role: "Software Engineer",
@@ -29,9 +32,21 @@ const sampleJobs: JobApplication[] = [
     status: "Applied",
     notes: "In my dreams",
   },
-];
+};
 
 export default function Home() {
+  const [jobs, setJobs] = useState<Record<string, JobApplication>>(initialJobsMap);
+
+  function handleStatusChange(id: string, newStatus: ApplicationStatus) {
+    setJobs((prevJobs) => ({
+      ...prevJobs,
+      [id]: {
+        ...prevJobs[id],
+        status: newStatus,
+      },
+    }));
+  }
+
   return (
     <main className="p-8 max-w-5xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">Resume Tracker</h1>
@@ -47,11 +62,23 @@ export default function Home() {
           </tr>
         </thead>
         <tbody>
-          {sampleJobs.map((job) => (
+          {Object.values(jobs).map((job) => (
             <tr key={job.id} className="border-b border-zinc-800">
               <td className="p-3 font-medium">{job.company}</td>
               <td className="p-3 text-zinc-400">{job.role}</td>
-              <td className="p-3">{job.status}</td>
+              <td className="p-3">
+                <select
+                  value={job.status}
+                  onChange={(e) => handleStatusChange(job.id, e.target.value as ApplicationStatus)}
+                  className="bg-zinc-800 text-zinc-200 text-xs px-2.5 py-1 rounded border border-zinc-700 outline-none cursor-pointer hover:border-zinc-500 transition-colors"
+                >
+                  <option value="Applied">Applied</option>
+                  <option value="Interview">Interview</option>
+                  <option value="Offer">Offer</option>
+                  <option value="Rejected">Rejected</option>
+                  <option value="Other">Other</option>
+                </select>
+              </td>
               <td className="p-3 text-zinc-400">{job.appliedDate}</td>
               <td className="p-3">
                 <a
