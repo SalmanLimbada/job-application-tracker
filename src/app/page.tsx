@@ -47,9 +47,17 @@ export default function Home() {
     }));
   }
 
+  function handleDeleteJob(id: string) {
+    setJobs((prevJobs) => {
+      const updatedJobs = { ...prevJobs };
+      delete updatedJobs[id];
+      return updatedJobs;
+    });
+  }
+
   return (
     <main className="p-8 max-w-5xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Resume Tracker</h1>
+      <h1 className="text-3xl font-bold mb-6">Job Application Tracker</h1>
       <table className="w-full text-left border border-zinc-800">
         <thead className="bg-zinc-800 text-zinc-300 text-xs uppercase font-semibold">
           <tr>
@@ -59,6 +67,7 @@ export default function Home() {
             <th className="p-3">Date Applied</th>
             <th className="p-3">Posting URL</th>
             <th className="p-3">Notes</th>
+            <th className="p-3">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -91,6 +100,14 @@ export default function Home() {
                 </a>
               </td>
               <td className="p-3 text-zinc-400">{job.notes}</td>
+              <td className="p-3">
+                <button
+                  onClick={() => handleDeleteJob(job.id)}
+                  className="text-zinc-500 hover:text-red-400 text-xs px-2 py-1 rounded hover:bg-red-950/30 transition-colors"
+                >
+                  Delete
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
