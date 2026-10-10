@@ -43,6 +43,12 @@ export default function Home() {
 
   const [jobs, setJobs] = useState<Record<string, JobApplication>>(initialJobsMap);
 
+  const jobList = Object.values(jobs);
+  const totalCount = jobList.length;
+  const interviewCount = jobList.filter((j) => j.status === "Interview").length;
+  const offerCount = jobList.filter((j) => j.status === "Offer").length;
+  const rejectedCount = jobList.filter((j) => j.status === "Rejected").length;
+
   function handleStatusChange(id: string, newStatus: ApplicationStatus) {
     setJobs((prevJobs) => ({
       ...prevJobs,
@@ -93,6 +99,26 @@ export default function Home() {
   return (
     <main className="p-8 max-w-5xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">Job Application Tracker</h1>
+
+      {/* Stats Overview */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+          <p className="text-xs text-zinc-400 font-medium uppercase tracking-wider">Total Applied</p>
+          <p className="text-2xl font-bold text-zinc-100 mt-1">{totalCount}</p>
+        </div>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+          <p className="text-xs text-blue-400 font-medium uppercase tracking-wider">Interviewing</p>
+          <p className="text-2xl font-bold text-blue-400 mt-1">{interviewCount}</p>
+        </div>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+          <p className="text-xs text-emerald-400 font-medium uppercase tracking-wider">Offers</p>
+          <p className="text-2xl font-bold text-emerald-400 mt-1">{offerCount}</p>
+        </div>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+          <p className="text-xs text-red-400 font-medium uppercase tracking-wider">Rejected</p>
+          <p className="text-2xl font-bold text-red-400 mt-1">{rejectedCount}</p>
+        </div>
+      </div>
       <form onSubmit={handleAddJob} className="mb-6 flex flex-wrap gap-3 items-center">
         <input
           type="text"
