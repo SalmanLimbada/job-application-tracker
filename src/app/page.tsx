@@ -156,6 +156,35 @@ export default function Home() {
     setNotes("");
   }
 
+  function handleExportCSV() {
+    const headers = ["Company", "Role", "Status", "Date Applied", "Posting URL", "Notes"];
+
+    function escapeCSV(val: string) {
+      if (val.includes(",") || val.includes('"') || val.includes("\n")) {
+        return `"${val.replace(/"/g, '""')}"`;
+      }
+      return val;
+    }
+
+    const rows = jobList.map((job) => [
+      escapeCSV(job.company),
+      escapeCSV(job.role),
+      escapeCSV(job.status),
+      escapeCSV(job.appliedDate),
+      escapeCSV(job.url),
+      escapeCSV(job.notes),
+    ]);
+
+    const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const downloadUrl = URL.createObjectURL(blob);
+    link.href = downloadUrl;
+    link.download = `job-applications-${new Date().toISOString().split("T")[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(downloadUrl);
+  }
+
   return (
     <main className="p-8 max-w-5xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">Job Application Tracker</h1>
@@ -233,24 +262,34 @@ export default function Home() {
       </form>
 
       {/* Search & Status Filter Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between mb-4">
-        <div className="relative flex-1 max-w-sm">
-          <input
-            type="text"
-            placeholder="Search company or role..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-zinc-900 border border-zinc-700 text-zinc-100 placeholder-zinc-500 text-sm rounded px-3 py-2 outline-none focus:border-zinc-400"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 text-xs cursor-pointer"
-            >
-              ✕
-            </button>
-          )}
+      <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between mb-4">
+        <div className="flex flex-wrap sm:flex-nowrap gap-2 items-center flex-1 max-w-md">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              placeholder="Search company or role..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-zinc-900 border border-zinc-700 text-zinc-100 placeholder-zinc-500 text-sm rounded px-3 py-2 outline-none focus:border-zinc-400"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 text-xs cursor-pointer"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            className="text-xs bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700 px-3 py-2 rounded transition-colors cursor-pointer whitespace-nowrap"
+            title="Download applications as CSV"
+          >
+            Export CSV
+          </button>
         </div>
 
         <div className="flex flex-wrap gap-1.5 items-center">
