@@ -2,6 +2,7 @@
 import { useState, useRef } from "react";
 import type { ApplicationStatus, JobApplication } from "@/types/job";
 import { exportApplicationsToCSV, parseApplicationsFromCSV } from "@/lib/csv";
+import StatsBanner from "@/components/StatsBanner";
 
 const initialJobsMap: Record<string, JobApplication> = {
   "1": {
@@ -194,25 +195,12 @@ export default function Home() {
     <main className="p-8 max-w-5xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">Job Application Tracker</h1>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-          <p className="text-xs text-zinc-400 font-medium uppercase tracking-wider">Total Applied</p>
-          <p className="text-2xl font-bold text-zinc-100 mt-1">{totalCount}</p>
-        </div>
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-          <p className="text-xs text-blue-400 font-medium uppercase tracking-wider">Interviewing</p>
-          <p className="text-2xl font-bold text-blue-400 mt-1">{interviewCount}</p>
-        </div>
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-          <p className="text-xs text-emerald-400 font-medium uppercase tracking-wider">Offers</p>
-          <p className="text-2xl font-bold text-emerald-400 mt-1">{offerCount}</p>
-        </div>
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-          <p className="text-xs text-red-400 font-medium uppercase tracking-wider">Rejected</p>
-          <p className="text-2xl font-bold text-red-400 mt-1">{rejectedCount}</p>
-        </div>
-      </div>
+      <StatsBanner
+        total={totalCount}
+        interviews={interviewCount}
+        offers={offerCount}
+        rejected={rejectedCount}
+      />
       {/* Add Application Form */}
       <section className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-5 mb-8 shadow-sm">
         <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">
