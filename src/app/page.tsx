@@ -62,6 +62,9 @@ export default function Home() {
     return matchesStatus && matchesSearch;
   });
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<Partial<JobApplication>>({});
+
   function handleStatusChange(id: string, newStatus: ApplicationStatus) {
     setJobs((prevJobs) => ({
       ...prevJobs,
@@ -72,12 +75,56 @@ export default function Home() {
     }));
   }
 
+  function startEditing(job: JobApplication) {
+    setEditingId(job.id);
+    setEditForm({
+      company: job.company,
+      role: job.role,
+      status: job.status,
+      appliedDate: job.appliedDate,
+      url: job.url,
+      notes: job.notes,
+    });
+  }
+
+  function cancelEditing() {
+    setEditingId(null);
+    setEditForm({});
+  }
+
+  function saveEditing(id: string) {
+    if (!editForm.company?.trim() || !editForm.role?.trim()) return;
+
+    setJobs((prevJobs) => ({
+      ...prevJobs,
+      [id]: {
+        ...prevJobs[id],
+        company: editForm.company!.trim(),
+        role: editForm.role!.trim(),
+        status: editForm.status || prevJobs[id].status,
+        appliedDate: editForm.appliedDate || prevJobs[id].appliedDate,
+        url: editForm.url?.trim() || "#",
+        notes: editForm.notes?.trim() || "",
+      },
+    }));
+
+    setEditingId(null);
+    setEditForm({});
+  }
+
   function handleDeleteJob(id: string) {
+    const job = jobs[id];
+    if (job && !confirm(`Delete application for ${job.company} (${job.role})?`)) {
+      return;
+    }
     setJobs((prevJobs) => {
       const updatedJobs = { ...prevJobs };
       delete updatedJobs[id];
       return updatedJobs;
     });
+    if (editingId === id) {
+      cancelEditing();
+    }
   }
 
   function handleAddJob(e: React.SubmitEvent) {
@@ -256,45 +303,137 @@ export default function Home() {
               </td>
             </tr>
           ) : (
-            filteredJobs.map((job) => (
-              <tr key={job.id} className="border-b border-zinc-800">
-                <td className="p-3 font-medium">{job.company}</td>
-                <td className="p-3 text-zinc-400">{job.role}</td>
-                <td className="p-3">
-                  <select
-                    value={job.status}
-                    onChange={(e) => handleStatusChange(job.id, e.target.value as ApplicationStatus)}
-                    className="bg-zinc-800 text-zinc-200 text-xs px-2.5 py-1 rounded border border-zinc-700 outline-none cursor-pointer hover:border-zinc-500 transition-colors"
-                  >
-                    <option value="Applied">Applied</option>
-                    <option value="Interview">Interview</option>
-                    <option value="Offer">Offer</option>
-                    <option value="Rejected">Rejected</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </td>
-                <td className="p-3 text-zinc-400">{job.appliedDate}</td>
-                <td className="p-3">
-                  <a
-                    href={job.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-400 hover:underline"
-                  >
-                    View Post ↗
-                  </a>
-                </td>
-                <td className="p-3 text-zinc-400">{job.notes}</td>
-                <td className="p-3">
-                  <button
-                    onClick={() => handleDeleteJob(job.id)}
-                    className="text-zinc-500 hover:text-red-400 text-xs px-2 py-1 rounded hover:bg-red-950/30 transition-colors"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))
+            filteredJobs.map((job) => {
+              const isEditing = editingId === job.id;
+
+              if (isEditing) {
+                return (
+                  <tr key={job.id} className="border-b border-zinc-700 bg-zinc-900/60">
+                    <td className="p-3">
+                      <input
+                        type="text"
+                        value={editForm.company ?? ""}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, company: e.target.value }))}
+                        className="bg-zinc-950 border border-zinc-700 text-zinc-100 text-xs rounded px-2 py-1 outline-none focus:border-zinc-400 w-full"
+                        required
+                      />
+                    </td>
+                    <td className="p-3">
+                      <input
+                        type="text"
+                        value={editForm.role ?? ""}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, role: e.target.value }))}
+                        className="bg-zinc-950 border border-zinc-700 text-zinc-100 text-xs rounded px-2 py-1 outline-none focus:border-zinc-400 w-full"
+                        required
+                      />
+                    </td>
+                    <td className="p-3">
+                      <select
+                        value={editForm.status ?? job.status}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, status: e.target.value as ApplicationStatus }))}
+                        className="bg-zinc-950 border border-zinc-700 text-zinc-200 text-xs px-2 py-1 rounded outline-none focus:border-zinc-400 cursor-pointer"
+                      >
+                        <option value="Applied">Applied</option>
+                        <option value="Interview">Interview</option>
+                        <option value="Offer">Offer</option>
+                        <option value="Rejected">Rejected</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </td>
+                    <td className="p-3">
+                      <input
+                        type="date"
+                        value={editForm.appliedDate ?? job.appliedDate}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, appliedDate: e.target.value }))}
+                        className="bg-zinc-950 border border-zinc-700 text-zinc-100 text-xs rounded px-2 py-1 outline-none focus:border-zinc-400"
+                      />
+                    </td>
+                    <td className="p-3">
+                      <input
+                        type="text"
+                        value={editForm.url ?? ""}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, url: e.target.value }))}
+                        placeholder="Posting URL"
+                        className="bg-zinc-950 border border-zinc-700 text-zinc-100 text-xs rounded px-2 py-1 outline-none focus:border-zinc-400 w-full"
+                      />
+                    </td>
+                    <td className="p-3">
+                      <input
+                        type="text"
+                        value={editForm.notes ?? ""}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, notes: e.target.value }))}
+                        placeholder="Notes"
+                        className="bg-zinc-950 border border-zinc-700 text-zinc-100 text-xs rounded px-2 py-1 outline-none focus:border-zinc-400 w-full"
+                      />
+                    </td>
+                    <td className="p-3 whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => saveEditing(job.id)}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium px-2.5 py-1 rounded transition-colors mr-1.5 cursor-pointer"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelEditing}
+                        className="text-zinc-400 hover:text-zinc-200 text-xs px-2 py-1 rounded hover:bg-zinc-800 transition-colors cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </td>
+                  </tr>
+                );
+              }
+
+              return (
+                <tr key={job.id} className="border-b border-zinc-800">
+                  <td className="p-3 font-medium">{job.company}</td>
+                  <td className="p-3 text-zinc-400">{job.role}</td>
+                  <td className="p-3">
+                    <select
+                      value={job.status}
+                      onChange={(e) => handleStatusChange(job.id, e.target.value as ApplicationStatus)}
+                      className="bg-zinc-800 text-zinc-200 text-xs px-2.5 py-1 rounded border border-zinc-700 outline-none cursor-pointer hover:border-zinc-500 transition-colors"
+                    >
+                      <option value="Applied">Applied</option>
+                      <option value="Interview">Interview</option>
+                      <option value="Offer">Offer</option>
+                      <option value="Rejected">Rejected</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </td>
+                  <td className="p-3 text-zinc-400">{job.appliedDate}</td>
+                  <td className="p-3">
+                    <a
+                      href={job.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:underline"
+                    >
+                      View Post ↗
+                    </a>
+                  </td>
+                  <td className="p-3 text-zinc-400">{job.notes}</td>
+                  <td className="p-3 whitespace-nowrap">
+                    <button
+                      type="button"
+                      onClick={() => startEditing(job)}
+                      className="text-zinc-400 hover:text-zinc-100 text-xs px-2 py-1 rounded hover:bg-zinc-800 transition-colors mr-1.5 cursor-pointer"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteJob(job.id)}
+                      className="text-zinc-500 hover:text-red-400 text-xs px-2 py-1 rounded hover:bg-red-950/30 transition-colors cursor-pointer"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>
