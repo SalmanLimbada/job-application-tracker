@@ -3,6 +3,7 @@ import { useState, useRef } from "react";
 import type { ApplicationStatus, JobApplication } from "@/types/job";
 import { exportApplicationsToCSV, parseApplicationsFromCSV } from "@/lib/csv";
 import StatsBanner from "@/components/StatsBanner";
+import JobForm, { type NewJobPayload } from "@/components/JobForm";
 
 const initialJobsMap: Record<string, JobApplication> = {
   "1": {
@@ -40,12 +41,6 @@ function formatUrl(rawUrl: string): string | null {
 }
 
 export default function Home() {
-  const [company, setCompany] = useState("");
-  const [role, setRole] = useState("");
-  const [url, setUrl] = useState("");
-  const [status, setStatus] = useState<ApplicationStatus>("Applied");
-  const [notes, setNotes] = useState("");
-
   const [jobs, setJobs] = useState<Record<string, JobApplication>>(initialJobsMap);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -132,33 +127,23 @@ export default function Home() {
     }
   }
 
-  function handleAddJob(e: React.SubmitEvent) {
-    e.preventDefault();
-
-    if (!company.trim() || !role.trim()) return;
-
+  function handleAddJob(payload: NewJobPayload) {
     const newId = Date.now().toString();
 
     const newJob: JobApplication = {
       id: newId,
-      company: company.trim(),
-      role: role.trim(),
+      company: payload.company,
+      role: payload.role,
       appliedDate: new Date().toISOString().split("T")[0],
-      url: url.trim() || "#",
-      status: status,
-      notes: notes.trim(),
+      url: payload.url,
+      status: payload.status,
+      notes: payload.notes,
     };
 
     setJobs((prevJobs) => ({
       ...prevJobs,
       [newId]: newJob,
     }));
-
-    setCompany("");
-    setRole("");
-    setUrl("");
-    setStatus("Applied");
-    setNotes("");
   }
 
   function handleExportCSV() {
@@ -201,66 +186,7 @@ export default function Home() {
         offers={offerCount}
         rejected={rejectedCount}
       />
-      {/* Add Application Form */}
-      <section className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-5 mb-8 shadow-sm">
-        <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">
-          Add New Application
-        </h2>
-        <form onSubmit={handleAddJob} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <input
-            type="text"
-            placeholder="Company (e.g. Amazon)"
-            value={company}
-            onChange={(e) => setCompany(e.target.value)}
-            className="bg-zinc-950 border border-zinc-800 text-zinc-100 placeholder-zinc-500 text-xs rounded-lg px-3 py-2.5 outline-none focus:border-zinc-500 transition-colors"
-            required
-          />
-
-          <input
-            type="text"
-            placeholder="Role (e.g. Engineer)"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="bg-zinc-950 border border-zinc-800 text-zinc-100 placeholder-zinc-500 text-xs rounded-lg px-3 py-2.5 outline-none focus:border-zinc-500 transition-colors"
-            required
-          />
-
-          <input
-            type="text"
-            placeholder="Posting URL (optional)"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            className="bg-zinc-950 border border-zinc-800 text-zinc-100 placeholder-zinc-500 text-xs rounded-lg px-3 py-2.5 outline-none focus:border-zinc-500 transition-colors"
-          />
-
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value as ApplicationStatus)}
-            className="bg-zinc-950 border border-zinc-800 text-zinc-100 text-xs rounded-lg px-3 py-2.5 outline-none focus:border-zinc-500 transition-colors cursor-pointer"
-          >
-            <option value="Applied">Applied</option>
-            <option value="Interview">Interview</option>
-            <option value="Offer">Offer</option>
-            <option value="Rejected">Rejected</option>
-            <option value="Other">Other</option>
-          </select>
-
-          <input
-            type="text"
-            placeholder="Notes (optional)"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            className="bg-zinc-950 border border-zinc-800 text-zinc-100 placeholder-zinc-500 text-xs rounded-lg px-3 py-2.5 outline-none focus:border-zinc-500 transition-colors"
-          />
-
-          <button
-            type="submit"
-            className="bg-zinc-100 hover:bg-white text-zinc-900 font-semibold text-xs px-4 py-2.5 rounded-lg transition-colors cursor-pointer shadow-sm hover:shadow"
-          >
-            + Add Job
-          </button>
-        </form>
-      </section>
+      <JobForm onAddJob={handleAddJob} />
 
       {/* Search & Status Filter Toolbar */}
       <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between mb-4">
