@@ -43,11 +43,24 @@ export default function Home() {
 
   const [jobs, setJobs] = useState<Record<string, JobApplication>>(initialJobsMap);
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState<ApplicationStatus | "All">("All");
+
   const jobList = Object.values(jobs);
   const totalCount = jobList.length;
   const interviewCount = jobList.filter((j) => j.status === "Interview").length;
   const offerCount = jobList.filter((j) => j.status === "Offer").length;
   const rejectedCount = jobList.filter((j) => j.status === "Rejected").length;
+
+  const filteredJobs = jobList.filter((job) => {
+    const matchesStatus = filterStatus === "All" || job.status === filterStatus;
+    const query = searchQuery.toLowerCase().trim();
+    const matchesSearch =
+      !query ||
+      job.company.toLowerCase().includes(query) ||
+      job.role.toLowerCase().includes(query);
+    return matchesStatus && matchesSearch;
+  });
 
   function handleStatusChange(id: string, newStatus: ApplicationStatus) {
     setJobs((prevJobs) => ({
@@ -170,8 +183,47 @@ export default function Home() {
         >
           + Add Job
         </button>
-
       </form>
+
+      {/* Search & Status Filter Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between mb-4">
+        <div className="relative flex-1 max-w-sm">
+          <input
+            type="text"
+            placeholder="Search company or role..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-zinc-900 border border-zinc-700 text-zinc-100 placeholder-zinc-500 text-sm rounded px-3 py-2 outline-none focus:border-zinc-400"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 text-xs cursor-pointer"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
+        <div className="flex flex-wrap gap-1.5 items-center">
+          {(["All", "Applied", "Interview", "Offer", "Rejected", "Other"] as const).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setFilterStatus(s)}
+              className={`text-xs px-3 py-1.5 rounded transition-colors cursor-pointer ${
+                filterStatus === s
+                  ? "bg-zinc-100 text-zinc-900 font-semibold"
+                  : "bg-zinc-900 text-zinc-400 hover:text-zinc-200 border border-zinc-800"
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <table className="w-full text-left border border-zinc-800">
         <thead className="bg-zinc-800 text-zinc-300 text-xs uppercase font-semibold">
           <tr>
@@ -185,45 +237,65 @@ export default function Home() {
           </tr>
         </thead>
         <tbody>
-          {Object.values(jobs).map((job) => (
-            <tr key={job.id} className="border-b border-zinc-800">
-              <td className="p-3 font-medium">{job.company}</td>
-              <td className="p-3 text-zinc-400">{job.role}</td>
-              <td className="p-3">
-                <select
-                  value={job.status}
-                  onChange={(e) => handleStatusChange(job.id, e.target.value as ApplicationStatus)}
-                  className="bg-zinc-800 text-zinc-200 text-xs px-2.5 py-1 rounded border border-zinc-700 outline-none cursor-pointer hover:border-zinc-500 transition-colors"
-                >
-                  <option value="Applied">Applied</option>
-                  <option value="Interview">Interview</option>
-                  <option value="Offer">Offer</option>
-                  <option value="Rejected">Rejected</option>
-                  <option value="Other">Other</option>
-                </select>
-              </td>
-              <td className="p-3 text-zinc-400">{job.appliedDate}</td>
-              <td className="p-3">
-                <a
-                  href={job.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-400 hover:underline"
-                >
-                  View Post ↗
-                </a>
-              </td>
-              <td className="p-3 text-zinc-400">{job.notes}</td>
-              <td className="p-3">
-                <button
-                  onClick={() => handleDeleteJob(job.id)}
-                  className="text-zinc-500 hover:text-red-400 text-xs px-2 py-1 rounded hover:bg-red-950/30 transition-colors"
-                >
-                  Delete
-                </button>
+          {filteredJobs.length === 0 ? (
+            <tr>
+              <td colSpan={7} className="p-8 text-center text-zinc-500 text-sm">
+                No job applications found matching your criteria.
+                {(searchQuery || filterStatus !== "All") && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setFilterStatus("All");
+                    }}
+                    className="block mx-auto mt-2 text-xs text-blue-400 hover:underline cursor-pointer"
+                  >
+                    Clear search and filters
+                  </button>
+                )}
               </td>
             </tr>
-          ))}
+          ) : (
+            filteredJobs.map((job) => (
+              <tr key={job.id} className="border-b border-zinc-800">
+                <td className="p-3 font-medium">{job.company}</td>
+                <td className="p-3 text-zinc-400">{job.role}</td>
+                <td className="p-3">
+                  <select
+                    value={job.status}
+                    onChange={(e) => handleStatusChange(job.id, e.target.value as ApplicationStatus)}
+                    className="bg-zinc-800 text-zinc-200 text-xs px-2.5 py-1 rounded border border-zinc-700 outline-none cursor-pointer hover:border-zinc-500 transition-colors"
+                  >
+                    <option value="Applied">Applied</option>
+                    <option value="Interview">Interview</option>
+                    <option value="Offer">Offer</option>
+                    <option value="Rejected">Rejected</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </td>
+                <td className="p-3 text-zinc-400">{job.appliedDate}</td>
+                <td className="p-3">
+                  <a
+                    href={job.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:underline"
+                  >
+                    View Post ↗
+                  </a>
+                </td>
+                <td className="p-3 text-zinc-400">{job.notes}</td>
+                <td className="p-3">
+                  <button
+                    onClick={() => handleDeleteJob(job.id)}
+                    className="text-zinc-500 hover:text-red-400 text-xs px-2 py-1 rounded hover:bg-red-950/30 transition-colors"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </main>
