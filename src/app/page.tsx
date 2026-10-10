@@ -1,17 +1,6 @@
 "use client";
 import { useState, useRef } from "react";
-
-type ApplicationStatus = "Applied" | "Rejected" | "Interview" | "Offer" | "Other";
-
-interface JobApplication {
-  id: string;
-  company: string;
-  role: string;
-  appliedDate: string;
-  url: string;
-  status: ApplicationStatus;
-  notes: string;
-}
+import type { ApplicationStatus, JobApplication } from "@/types/job";
 
 const initialJobsMap: Record<string, JobApplication> = {
   "1": {
