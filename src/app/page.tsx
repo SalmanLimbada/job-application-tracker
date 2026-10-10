@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef } from "react";
 import type { ApplicationStatus, JobApplication } from "@/types/job";
+import { exportApplicationsToCSV, parseApplicationsFromCSV } from "@/lib/csv";
 
 const initialJobsMap: Record<string, JobApplication> = {
   "1": {
@@ -160,32 +161,7 @@ export default function Home() {
   }
 
   function handleExportCSV() {
-    const headers = ["Company", "Role", "Status", "Date Applied", "Posting URL", "Notes"];
-
-    function escapeCSV(val: string) {
-      if (val.includes(",") || val.includes('"') || val.includes("\n")) {
-        return `"${val.replace(/"/g, '""')}"`;
-      }
-      return val;
-    }
-
-    const rows = jobList.map((job) => [
-      escapeCSV(job.company),
-      escapeCSV(job.role),
-      escapeCSV(job.status),
-      escapeCSV(job.appliedDate),
-      escapeCSV(job.url),
-      escapeCSV(job.notes),
-    ]);
-
-    const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const downloadUrl = URL.createObjectURL(blob);
-    link.href = downloadUrl;
-    link.download = `job-applications-${new Date().toISOString().split("T")[0]}.csv`;
-    link.click();
-    URL.revokeObjectURL(downloadUrl);
+    exportApplicationsToCSV(jobList);
   }
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -196,71 +172,7 @@ export default function Home() {
 
     try {
       const text = await file.text();
-      const lines = text.split(/\r?\n/).filter((line) => line.trim().length > 0);
-
-      if (lines.length < 2) {
-        alert("The selected CSV file appears to be empty or missing data rows.");
-        return;
-      }
-
-      function parseCSVLine(line: string): string[] {
-        const result: string[] = [];
-        let cur = "";
-        let inQuotes = false;
-        for (let i = 0; i < line.length; i++) {
-          const char = line[i];
-          if (char === '"') {
-            if (inQuotes && line[i + 1] === '"') {
-              cur += '"';
-              i++;
-            } else {
-              inQuotes = !inQuotes;
-            }
-          } else if (char === "," && !inQuotes) {
-            result.push(cur.trim());
-            cur = "";
-          } else {
-            cur += char;
-          }
-        }
-        result.push(cur.trim());
-        return result;
-      }
-
-      const validStatuses: ApplicationStatus[] = ["Applied", "Interview", "Offer", "Rejected", "Other"];
-      const newJobsMap: Record<string, JobApplication> = {};
-      let count = 0;
-
-      // Skip header row at index 0
-      for (let i = 1; i < lines.length; i++) {
-        const cols = parseCSVLine(lines[i]);
-        const company = cols[0] || "";
-        const role = cols[1] || "";
-        if (!company || !role) continue;
-
-        const rawStatus = (cols[2] || "Applied") as ApplicationStatus;
-        const status: ApplicationStatus = validStatuses.includes(rawStatus) ? rawStatus : "Applied";
-        const appliedDate = cols[3] || new Date().toISOString().split("T")[0];
-        const url = cols[4] || "#";
-        const notes = cols[5] || "";
-
-        const id = `${Date.now()}-${count}`;
-        newJobsMap[id] = {
-          id,
-          company,
-          role,
-          status,
-          appliedDate,
-          url,
-          notes,
-        };
-        count++;
-      }
-
-      if (count === 0) {
-        alert("No valid job applications were found in this CSV.");
-        return;
-      }
+      const { jobs: newJobsMap, count } = parseApplicationsFromCSV(text);
 
       setJobs((prevJobs) => ({
         ...prevJobs,
@@ -268,8 +180,9 @@ export default function Home() {
       }));
 
       alert(`Successfully imported ${count} job application${count === 1 ? "" : "s"}!`);
-    } catch {
-      alert("Failed to read CSV file. Please make sure it is a valid format.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to read CSV file.";
+      alert(message);
     } finally {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
